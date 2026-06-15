@@ -25,10 +25,10 @@ This project is built on top of the [discord-video-stream](https://github.com/Di
 ## 🛠️ Prerequisites
 
 1. **Node.js**: Version 20 or higher (v26+ recommended).
-2. **FFmpeg**: Must be installed on your system and added to your environment's `PATH`.
-   - *Windows*: Download FFmpeg and add it to your system variables.
+2. **[FFmpeg](https://ffmpeg.org/)**: Must be installed on your system and added to your environment's `PATH`.
+   - *Windows*: Download FFmpeg from the [official download page](https://ffmpeg.org/download.html) and add it to your system variables.
    - *Linux*: Run `sudo apt install ffmpeg`.
-3. **yt-dlp**: Used to extract stream links from Twitch/YouTube.
+3. **[yt-dlp](https://github.com/yt-dlp/yt-dlp)**: Used to extract stream links from Twitch/YouTube.
    - *Windows*: Pre-bundled as `yt-dlp.exe` in the root folder.
    - *Linux*: The bot automatically looks for a global installation. Install it via your package manager: `sudo apt install yt-dlp` (or pip/wget).
 
