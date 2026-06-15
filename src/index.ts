@@ -65,6 +65,11 @@ interface QueueItem {
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 
+// URLs (oder Teilstrings) die automatisch den Fußball-Liveticker aktivieren
+const FOOTBALL_STREAM_URLS: string[] = [
+  "38600_10301",   // Fritz!Box Fußball-Kanal
+];
+
 const QUALITY_PRESETS: Record<string, StreamSettings> = {
   "360p":    { height: 360,  fps: 30, bitrateVideo: 1000,  bitrateVideoMax: 1500  },
   "480p":    { height: 480,  fps: 30, bitrateVideo: 2500,  bitrateVideoMax: 3500  },
@@ -95,13 +100,17 @@ let currentSettings: StreamSettings = {
 let currentCommand: any       = null;
 let currentPreMux: ChildProcess | null = null;
 let isStreaming                = false;
-let stopRequested          = false;   // verhindert Auto-Next nach manuellem $stop
+let stopRequested          = false;
 let lastStreamUrl: string | null          = null;
 let lastStreamType: "go-live" | "camera" | null = null;
-let currentVolume          = 100;     // Prozent (100 = normal, 0 = stumm, 200 = 2×)
+let currentVolume          = 100;
 let loopEnabled            = false;
-let seekPosition: string | null = null; // z.B. "01:30:00" oder "90"
+let seekPosition: string | null = null;
 const videoQueue: QueueItem[] = [];
+
+// Fußball-Liveticker
+let tickerInterval: ReturnType<typeof setInterval> | null = null;
+let tickerEnabled  = false;
 
 // ─── Streamer ─────────────────────────────────────────────────────────────────
 
@@ -287,6 +296,44 @@ streamer.client.on("messageCreate", async (message: any) => {
       case "qc": { await handleQueueCommand(["clear"], message); break; }
       case "qs": { await handleQueueCommand(["skip"],  message); break; }
 
+      // ── Fußball-Ticker ─────────────────────────────────────────────────────
+
+      case "ticker": {
+        const leagueArg = args[0]?.toLowerCase();
+        const p = config.prefix;
+
+        if (leagueArg === "list") {
+          const lines = Object.entries(TICKER_LEAGUES)
+            .filter(([k]) => !["bl", "wm2026"].includes(k)) // Duplikate ausblenden
+            .map(([k, v]) => `\`${p}ticker ${k}\` — ${v.label}`);
+          message.reply("**⚽ Ticker-Ligen:**\n" + lines.join("\n"));
+          break;
+        }
+
+        if (leagueArg && TICKER_LEAGUES[leagueArg]) {
+          await startFootballTicker(leagueArg);
+          const current = await fetchBundesligaTicker();
+          message.reply(current
+            ? `✅ Ticker **${TICKER_LEAGUES[leagueArg].label}**: ${current}`
+            : `✅ Ticker **${TICKER_LEAGUES[leagueArg].label}** aktiv — gerade keine Livespiele.`
+          );
+          break;
+        }
+
+        if (tickerEnabled) {
+          stopFootballTicker();
+          message.reply("⏹️ Liveticker gestoppt.");
+        } else {
+          await startFootballTicker();
+          const current = await fetchBundesligaTicker();
+          message.reply(current
+            ? `✅ Ticker aktiv (${TICKER_LEAGUES[tickerLeague]?.label}): ${current}`
+            : `✅ Ticker aktiv — keine Livespiele gerade (\`${p}ticker list\` für alle Ligen).`
+          );
+        }
+        break;
+      }
+
       // ── Quality ────────────────────────────────────────────────────────────
 
       case "quality": {
@@ -352,6 +399,8 @@ streamer.client.on("messageCreate", async (message: any) => {
           `\`${p}queue skip\` (\`${p}qs\`) — Nächstes Video abspielen\n` +
           `\`${p}queue remove <nr>\` — Video aus Queue entfernen\n` +
           `\`${p}queue clear\` (\`${p}qc\`) — Queue leeren\n\n` +
+          "**⚽ Liveticker**\n" +
+          `\`${p}ticker\` — Liveticker an/aus · \`${p}ticker wm\` — WM 2026 · \`${p}ticker list\` — alle Ligen\n\n` +
           "**ℹ️ Info**\n" +
           `\`${p}np\` — Jetzt läuft (Details)\n` +
           `\`${p}status\` — Kurzübersicht\n` +
@@ -536,6 +585,104 @@ async function handleQualityCommand(args: string[], message: any): Promise<void>
 
 // ─── Stream-Logik ─────────────────────────────────────────────────────────────
 
+// ─── Fußball-Liveticker ───────────────────────────────────────────────────────
+
+// Wählbare Liga-Quellen
+const TICKER_LEAGUES: Record<string, { label: string; fetch: () => Promise<string | null> }> = {};
+
+// ESPN-API (WM 2026, Champions League, …)
+async function fetchEspnScores(slug: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard`
+    );
+    if (!res.ok) return null;
+    const data = await res.json() as any;
+    const live = (data.events ?? []).filter((e: any) => e.status?.type?.state === "in");
+    if (live.length === 0) return null;
+    return "⚽ " + live.map((e: any) => {
+      const comp = e.competitions?.[0];
+      const home = comp?.competitors?.find((c: any) => c.homeAway === "home");
+      const away = comp?.competitors?.find((c: any) => c.homeAway === "away");
+      if (!home || !away) return e.shortName ?? e.name;
+      return `${home.team.abbreviation} ${home.score}:${away.score} ${away.team.abbreviation}`;
+    }).join("  |  ");
+  } catch {
+    return null;
+  }
+}
+
+// OpenLigaDB (Bundesliga 1+2)
+interface OLDBMatch {
+  matchDateTimeUTC: string;
+  matchIsFinished: boolean;
+  team1: { shortName: string };
+  team2: { shortName: string };
+  matchResults: Array<{ resultTypeID: number; pointsTeam1: number; pointsTeam2: number }>;
+}
+
+async function fetchOpenLigaScores(leagues: string[]): Promise<string | null> {
+  try {
+    const results = await Promise.all(
+      leagues.map(l => fetch(`https://api.openligadb.de/getmatchdata/${l}`).then(r => r.json() as Promise<OLDBMatch[]>))
+    );
+    const now = Date.now();
+    const live = results.flat().filter(m => {
+      if (m.matchIsFinished) return false;
+      const diff = (now - new Date(m.matchDateTimeUTC).getTime()) / 60000;
+      return diff >= -2 && diff <= 110;
+    });
+    if (live.length === 0) return null;
+    return "⚽ " + live.map(m => {
+      const r = m.matchResults.at(-1);
+      const score = r ? `${r.pointsTeam1}:${r.pointsTeam2}` : "vs";
+      return `${m.team1.shortName} ${score} ${m.team2.shortName}`;
+    }).join("  |  ");
+  } catch {
+    return null;
+  }
+}
+
+// Bekannte Ligen
+TICKER_LEAGUES["bundesliga"] = { label: "Bundesliga 1+2",        fetch: () => fetchOpenLigaScores(["bl1", "bl2"]) };
+TICKER_LEAGUES["bl"]         = TICKER_LEAGUES["bundesliga"];
+TICKER_LEAGUES["wm"]         = { label: "WM 2026",               fetch: () => fetchEspnScores("fifa.world") };
+TICKER_LEAGUES["wm2026"]     = TICKER_LEAGUES["wm"];
+TICKER_LEAGUES["cl"]         = { label: "Champions League",      fetch: () => fetchEspnScores("uefa.champions") };
+TICKER_LEAGUES["em"]         = { label: "EM / Euro",             fetch: () => fetchEspnScores("uefa.euro") };
+TICKER_LEAGUES["dfb"]        = { label: "DFB-Pokal",             fetch: () => fetchOpenLigaScores(["dfb-pokal"]) };
+
+let tickerLeague = "bundesliga";
+
+async function fetchBundesligaTicker(): Promise<string | null> {
+  return TICKER_LEAGUES[tickerLeague]?.fetch() ?? null;
+}
+
+async function startFootballTicker(league?: string): Promise<void> {
+  if (league && TICKER_LEAGUES[league]) tickerLeague = league;
+  stopFootballTicker();
+  tickerEnabled = true;
+  const update = async () => {
+    if (!tickerEnabled) return;
+    const ticker = await fetchBundesligaTicker();
+    if (ticker) streamer.client.user?.setActivity(ticker, { type: "WATCHING" });
+  };
+  await update();
+  tickerInterval = setInterval(update, 60_000);
+  console.log(`[Ticker] Liveticker gestartet — ${TICKER_LEAGUES[tickerLeague]?.label ?? tickerLeague}`);
+}
+
+function stopFootballTicker(): void {
+  tickerEnabled = false;
+  if (tickerInterval) {
+    clearInterval(tickerInterval);
+    tickerInterval = null;
+  }
+  try { streamer.client.user?.setActivity(undefined as any); } catch (_) {}
+}
+
+// ─── IPTV-Hilfsfunktionen ────────────────────────────────────────────────────
+
 // Liest eine IPTV-M3U-Playlist und extrahiert die erste Stream-URL (z.B. rtsp://).
 async function parseM3uStreamUrl(m3uUrl: string): Promise<string | null> {
   try {
@@ -665,6 +812,11 @@ async function startStream(url: string, type: "go-live" | "camera"): Promise<voi
     console.warn(`[yt-dlp] Extraktion fehlgeschlagen, verwende Original-URL:`, e instanceof Error ? e.message : e);
   }
 
+  // Fußball-Ticker: Auto-Start wenn URL einem konfigurierten Kanal entspricht
+  if (FOOTBALL_STREAM_URLS.some(p => url.includes(p))) {
+    startFootballTicker().catch(() => {});
+  }
+
   const encoder = Encoders.software({
     x264: { preset: "superfast" },
     x265: { preset: "superfast" },
@@ -774,6 +926,7 @@ async function startStream(url: string, type: "go-live" | "camera"): Promise<voi
       }
       currentCommand = null;
       isStreaming    = false;
+      stopFootballTicker();
       if (!stopRequested) playNextOrLoop();
     });
 }
@@ -792,6 +945,7 @@ function playNextOrLoop(): void {
 async function stopCurrentStream(): Promise<void> {
   stopRequested = true;
   isStreaming   = false;
+  stopFootballTicker();
   if (currentPreMux) {
     try { currentPreMux.kill("SIGINT"); } catch (_) {}
     currentPreMux = null;
