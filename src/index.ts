@@ -536,6 +536,22 @@ async function handleQualityCommand(args: string[], message: any): Promise<void>
 
 // ─── Stream-Logik ─────────────────────────────────────────────────────────────
 
+// Liest eine IPTV-M3U-Playlist und extrahiert die erste Stream-URL (z.B. rtsp://).
+async function parseM3uStreamUrl(m3uUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(m3uUrl);
+    if (!res.ok) return null;
+    const text = await res.text();
+    for (const line of text.split("\n")) {
+      const t = line.trim();
+      if (t && !t.startsWith("#")) return t;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Parst HLS-Master-Manifest und gibt die URL der Standard-Audio-Rendition zurück.
 // Notwendig, weil FFmpeg bei HLS mit separaten Audio-Renditions (EXT-X-MEDIA)
 // die Audio-URL als eigenständigen Input braucht — -map 0:a schlägt fehl.
@@ -586,6 +602,16 @@ async function extractStreamUrl(url: string): Promise<string> {
   
   if (isDirect) {
     return url;
+  }
+
+  // IPTV M3U-Playlists direkt parsen — yt-dlp unterstützt kein rtsp://
+  const isPlainM3u = /\.m3u(\?|$)/i.test(url) && !isDirect;
+  if (isPlainM3u && (url.startsWith("http://") || url.startsWith("https://"))) {
+    const extracted = await parseM3uStreamUrl(url);
+    if (extracted) {
+      console.log(`[M3U] Stream-URL: ${extracted.slice(0, 100)}`);
+      return extracted;
+    }
   }
 
   return new Promise((resolve, reject) => {
@@ -646,6 +672,7 @@ async function startStream(url: string, type: "go-live" | "camera"): Promise<voi
 
   const isHls  = /\.m3u8(\?|$)/i.test(resolvedUrl) || resolvedUrl.includes("/hls/");
   const isHttp = resolvedUrl.startsWith("http://") || resolvedUrl.startsWith("https://");
+  const isRtsp = resolvedUrl.startsWith("rtsp://") || resolvedUrl.startsWith("rtsps://");
 
   let streamInput: string | Readable = resolvedUrl;
   if (isHls) {
@@ -684,7 +711,17 @@ async function startStream(url: string, type: "go-live" | "camera"): Promise<voi
   }
 
   const inputOptions: string[] = [];
-  if (isHttp && !isHls) {
+  if (isRtsp) {
+    // RTSP direkt an die Library. RTP-Buffer minimieren (default 5 MB ≈ mehrere Sekunden Lag).
+    inputOptions.push(
+      "-fflags", "+discardcorrupt",
+      "-max_delay", "500000",
+      "-rtbufsize", "2M",
+      "-analyzeduration", "1000000",
+      "-probesize", "2000000",
+      "-protocol_whitelist", "file,http,https,tcp,tls,crypto,rtsp,rtp,udp"
+    );
+  } else if (isHttp && !isHls) {
     inputOptions.push("-protocol_whitelist", "file,http,https,tcp,tls,crypto");
   }
   if (!isHls && consumedSeek) {

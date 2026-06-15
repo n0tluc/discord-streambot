@@ -5,7 +5,7 @@ A powerful Discord selfbot for streaming videos (local files, Twitch streams, Yo
 This project is built on top of the [discord-video-stream](https://github.com/Discord-RE/Discord-video-stream) package, is fully compatible with both **Windows** and **Linux**, and utilizes a cross-platform stream piping architecture alongside automated URL extraction via `yt-dlp`.
 
 > [!WARNING]
-> **IMPORTANT NOTE (Discord ToS)**: Using selfbots (automating user accounts instead of using official bot accounts) is a violation of Discord's Terms of Service. This can lead to a permanent ban of your Discord account. Use this project at your own risk!
+> Using selfbots (automating user accounts instead of using official bot accounts) is a violation of Discord's Terms of Service. This can lead to a permanent ban of your Discord account. Use this project at your own risk!
 
 ---
 
