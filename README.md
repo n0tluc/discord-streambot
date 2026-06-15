@@ -1,54 +1,54 @@
 # 🎬 Discord Video Stream Selfbot
 
-Ein leistungsstarker Discord-Selfbot zum Streamen von Videos (Dateien, Twitch, YouTube, HLS-Playlists, ZDF/ARD-Mediathek etc.) direkt in Voice-Kanäle (Go-Live-Übertragungen oder Kamera-Feed). 
+A powerful Discord selfbot for streaming videos (local files, Twitch streams, YouTube videos/live streams, HLS playlists, ZDF/ARD streams, etc.) directly into voice channels as a Go-Live screen share or a camera feed.
+
+This project is built on top of the [discord-video-stream](https://github.com/Discord-RE/Discord-video-stream) package, is fully compatible with both **Windows** and **Linux**, and utilizes a cross-platform stream piping architecture alongside automated URL extraction via `yt-dlp`.
 
 > [!WARNING]
-> **WICHTIGER HINWEIS (Discord ToS)**: Die Verwendung von Selfbots (automatisierte Interaktionen über einen normalen Benutzer-Account statt eines offiziellen Bot-Accounts) verstößt gegen die Nutzungsbedingungen (Terms of Service) von Discord. Dies kann dazu führen, dass dein Discord-Account permanent gesperrt wird. Die Nutzung dieses Projekts erfolgt auf eigene Gefahr!
-
-Dieses Projekt ist voll kompatibel mit **Windows** und **Linux** und nutzt eine plattformunabhängige Stream-Piping-Architektur sowie eine automatische Auflösung über `yt-dlp`.
+> **IMPORTANT NOTE (Discord ToS)**: Using selfbots (automating user accounts instead of using official bot accounts) is a violation of Discord's Terms of Service. This can lead to a permanent ban of your Discord account. Use this project at your own risk!
 
 ---
 
 ## ✨ Features
 
-- **📺 Vielfältige Quellen**: Streamt YouTube-Videos/Live-Streams, Twitch-Streams, HLS-Playlists (`.m3u8`), ZDF/ARD-Streams, lokale MP4/MKV-Dateien und Direct-URLs.
-- **📹 Zwei Streaming-Modi**: Streamen als **Go-Live-Übertragung** (Bildschirmübertragung) oder als **Kamera-Feed**.
-- **📋 Queue-System**: Hinzufügen von Streams in eine Wiedergabeliste mit Auto-Play, Skip, Liste und Clear.
-- **⏱️ Seek-Funktion**: Starte Videos/Streams ab einer bestimmten Zeitmarke (z. B. `01:30:00` oder in Sekunden).
-- **🔂 Loop-Modus**: Automatische Wiederholung des aktuellen Streams.
-- **🔊 Lautstärkeregelung**: Passe die Lautstärke in Echtzeit an (von 0 % bis 200 %).
-- **🎨 Qualitäts-Presets & Anpassung**: Vordefinierte Presets von 360p bis 4K / 60 FPS sowie freie Bitraten- und FPS-Wahl.
-- **🔗 Invite-Joining**: Beitritt zu Discord-Servern direkt per Chat-Command (inklusive Schutz vor Onboarding- und Captcha-Abstürzen).
+- **📺 Rich Media Sources**: Stream YouTube videos/live streams, Twitch streams, HLS playlists (`.m3u8`), public media streams, local MP4/MKV files, and direct stream URLs.
+- **📹 Two Streaming Modes**: Stream as a **Go-Live screen share** or a **Camera feed**.
+- **📋 Queue System**: Add multiple streams to a playback queue with auto-play, skip, listing, and clearing capabilities.
+- **⏱️ Seek Function**: Start playing videos from a specific time (e.g., `01:30:00` or in seconds).
+- **🔂 Loop Mode**: Loop the currently playing stream automatically.
+- **🔊 Real-time Volume**: Adjust the playback volume on the fly (from 0% to 200%).
+- **🎨 Custom Quality Presets**: Choose quality levels from 360p up to 4K at 60 FPS, or configure custom resolutions, frame rates, and bitrates.
+- **🔗 Guild Invite joining**: Join servers directly via chat commands (fully patched against onboarding and captcha-related crashes).
 
 ---
 
-## 🛠️ Voraussetzungen
+## 🛠️ Prerequisites
 
-1. **Node.js**: Version 20 oder höher (v26+ empfohlen).
-2. **FFmpeg**: Muss auf deinem System installiert und in den Systemvariablen (`PATH`) eingetragen sein.
-   - *Windows*: FFmpeg herunterladen und PATH setzen.
-   - *Linux*: `sudo apt install ffmpeg` ausführen.
-3. **yt-dlp**: Wird für das Extrahieren von Twitch/YouTube-Streams verwendet.
-   - *Windows*: Liegt als ausführbare `yt-dlp.exe` im Projektordner.
-   - *Linux*: Der Bot sucht standardmäßig nach einem installierten `yt-dlp`. Installiere es einfach über deinen Paketmanager: `sudo apt install yt-dlp` (oder über pip/wget).
+1. **Node.js**: Version 20 or higher (v26+ recommended).
+2. **FFmpeg**: Must be installed on your system and added to your environment's `PATH`.
+   - *Windows*: Download FFmpeg and add it to your system variables.
+   - *Linux*: Run `sudo apt install ffmpeg`.
+3. **yt-dlp**: Used to extract stream links from Twitch/YouTube.
+   - *Windows*: Pre-bundled as `yt-dlp.exe` in the root folder.
+   - *Linux*: The bot automatically looks for a global installation. Install it via your package manager: `sudo apt install yt-dlp` (or pip/wget).
 
 ---
 
-## 🚀 Installation & Start
+## 🚀 Installation & Getting Started
 
-1. Installiere die Node-Abhängigkeiten im Projektordner:
+1. Install Node.js dependencies in the project directory:
    ```bash
    npm install
    ```
 
-2. Passe die Konfiguration in der `config.json` an (siehe unten).
+2. Configure the bot inside `config.json` (see configuration below).
 
-3. Starte den Bot:
-   - **Entwicklungsmodus** (mit Auto-Reload bei Änderungen):
+3. Start the bot:
+   - **Development Mode** (with automatic restart on code changes):
      ```bash
      npm run dev
      ```
-   - **Produktionsmodus**:
+   - **Production Mode**:
      ```bash
      npm run build
      npm start
@@ -56,15 +56,15 @@ Dieses Projekt ist voll kompatibel mit **Windows** und **Linux** und nutzt eine 
 
 ---
 
-## ⚙️ Konfiguration (`config.json`)
+## ⚙️ Configuration (`config.json`)
 
-Erstelle oder bearbeite die `config.json` im Hauptverzeichnis des Projekts:
+Create or edit `config.json` in the root directory:
 
 ```json
 {
-  "token": "DEIN_DISCORD_USER_TOKEN",
+  "token": "YOUR_DISCORD_USER_TOKEN",
   "prefix": "$",
-  "acceptedAuthors": ["DEINE_DISCORD_USER_ID"],
+  "acceptedAuthors": ["YOUR_DISCORD_USER_ID"],
   "height": 1080,
   "fps": 30,
   "bitrateVideo": 5000,
@@ -74,65 +74,68 @@ Erstelle oder bearbeite die `config.json` im Hauptverzeichnis des Projekts:
 }
 ```
 
-> ⚠️ **Achtung**: Selfbots (Bots, die auf normalen Benutzer-Accounts laufen) verstoßen gegen die Nutzungsbedingungen von Discord. Die Verwendung erfolgt auf eigene Gefahr!
+---
+
+## 🕹️ Commands
+
+The default prefix is `$`. Only user IDs specified in `acceptedAuthors` can execute commands.
+
+### ▶️ Playback & Voice
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `$join [channel_id]` | Joins your current voice channel or the voice channel of the specified ID. | `$join 123456789` |
+| `$leave` | Leaves the voice channel and stops any active streams. | `$leave` |
+| `$play <url>` | Streams the link/media as a Go-Live screen share. | `$play https://youtu.be/dQw4w9WgXcQ` |
+| `$cam <url>` | Streams the link/media as a webcam feed. | `$cam https://twitch.tv/honeypuu` |
+| `$stop` | Stops the current stream (but stays in the voice channel). | `$stop` |
+| `$replay` / `$r` | Restarts the last played stream (useful after modifying settings). | `$r` |
+
+### 🎛️ Settings
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `$volume [0-200]` | Displays current volume or changes it (100 = default). | `$vol 80` |
+| `$seek <time>` | Sets the start offset for the next stream (format `hh:mm:ss`, `mm:ss`, or seconds). Reset using `reset`. | `$seek 01:30:00` |
+| `$loop` | Toggles loop mode for the current stream. | `$loop` |
+| `$quality <preset>` | Sets the resolution preset for the next stream (e.g. `720p`, `1080p60`, `4k`). | `$quality 1080p60` |
+| `$quality list` | Lists all available quality presets. | `$quality list` |
+| `$quality set <param> <val>` | Modifies individual options (`fps`, `res`, `bitrate`, `maxbitrate`). | `$quality set fps 60` |
+
+### 📋 Queue
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `$queue add <url> [cam]` | Adds a video/stream to the queue (append `cam` at the end to play in webcam mode). | `$qa https://... cam` |
+| `$queue list` / `$ql` | Displays all videos in the queue. | `$ql` |
+| `$queue skip` / `$qs` | Skips the current video and plays the next item in the queue. | `$qs` |
+| `$queue remove <nr>` | Removes the item at the specified position from the queue. | `$queue remove 2` |
+| `$queue clear` / `$qc` | Clears all items from the queue. | `$qc` |
+
+### ℹ️ Info & Server Management
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `$np` | Displays detailed info about the currently playing stream. | `$np` |
+| `$status` | Displays a brief bot status overview. | `$status` |
+| `$invite <link>` | Joins a server using an invite link or code (manual join on Discord client is recommended). | `$invite https://discord.gg/invitecode` |
+| `$help` | Displays this help overview. | `$help` |
 
 ---
 
-## 🕹️ Befehle
+## ❓ Troubleshooting
 
-Standardmäßig wird das Präfix `$` verwendet. Nur in der `acceptedAuthors`-Liste eingetragene User-IDs können Befehle ausführen.
+### 1. `CAPTCHA_SOLVER_NOT_IMPLEMENTED` on `$invite`
+When a selfbot joins a guild via the API, Discord often requests a CAPTCHA (especially on cloud hosting IPs).
+- **Solution**: Since your selfbot shares your actual personal Discord account, **simply click and join the invite link manually in your official Discord app** once. The bot will automatically be present on the server and ready to stream.
 
-### ▶️ Wiedergabe & Voice
-| Befehl | Beschreibung | Beispiel |
-| :--- | :--- | :--- |
-| `$join [channel_id]` | Tritt deinem aktuellen Voice-Kanal oder der angegebenen ID bei. | `$join 123456789` |
-| `$leave` | Verlässt den Voice-Kanal und stoppt alle Streams. | `$leave` |
-| `$play <url>` | Startet eine Go-Live Bildschirmübertragung des Links/Streams. | `$play https://youtu.be/dQw4w9WgXcQ` |
-| `$cam <url>` | Startet den Stream als Kamera-Feed im Voice-Kanal. | `$cam https://twitch.tv/honeypuu` |
-| `$stop` | Stoppt den aktuellen Stream (aber bleibt im Voice-Kanal). | `$stop` |
-| `$replay` / `$r` | Startet den zuletzt gespielten Stream neu (hilfreich nach Einstellungsänderungen). | `$r` |
+### 2. Linux Execute Permissions for `yt-dlp`
+If the bot fails to run `yt-dlp` on Linux:
+- **Solution**: The bot automatically attempts to run `chmod +x` on the local `yt-dlp` binary. If it fails, install `yt-dlp` globally via your package manager: `sudo apt install yt-dlp`.
 
-### 🎛️ Einstellungen
-| Befehl | Beschreibung | Beispiel |
-| :--- | :--- | :--- |
-| `$volume [0-200]` | Zeigt die aktuelle Lautstärke an oder ändert sie (100 = normal). | `$vol 80` |
-| `$seek <zeit>` | Setzt die Startposition für den nächsten Stream (Format `hh:mm:ss`, `mm:ss` oder Sekunden). Zurücksetzen mit `reset`. | `$seek 01:30:00` |
-| `$loop` | Schaltet die automatische Wiederholung des aktuellen Videos ein/aus. | `$loop` |
-| `$quality <preset>` | Ändert die Qualität für den nächsten Stream (z. B. `720p`, `1080p60`, `4k`). | `$quality 1080p60` |
-| `$quality list` | Listet alle verfügbaren Qualitäts-Presets auf. | `$quality list` |
-| `$quality set <param> <wert>` | Ändert einzelne Parameter (`fps`, `res`, `bitrate`, `maxbitrate`). | `$quality set fps 60` |
-
-### 📋 Queue (Wiedergabeliste)
-| Befehl | Beschreibung | Beispiel |
-| :--- | :--- | :--- |
-| `$queue add <url> [cam]` | Fügt einen Stream zur Queue hinzu (optional mit `cam` am Ende für Kamera-Modus). | `$qa https://... cam` |
-| `$queue list` / `$ql` | Zeigt alle anstehenden Streams in der Queue an. | `$ql` |
-| `$queue skip` / `$qs` | Stoppt den aktuellen Stream und spielt das nächste Video aus der Queue ab. | `$qs` |
-| `$queue remove <nr>` | Entfernt das Video an der angegebenen Position aus der Queue. | `$queue remove 2` |
-| `$queue clear` / `$qc` | Leert die gesamte Queue. | `$qc` |
-
-### ℹ️ Info & Verwaltung
-| Befehl | Beschreibung | Beispiel |
-| :--- | :--- | :--- |
-| `$np` | Zeigt detaillierte Infos zum aktuell laufenden Stream an. | `$np` |
-| `$status` | Zeigt eine kurze Statusübersicht an. | `$status` |
-| `$invite <link>` | Lässt den Account dem angegebenen Server beitreten (Alternative: Tritt im echten Client bei). | `$invite https://discord.gg/invitecode` |
-| `$help` | Zeigt die Hilfeübersicht an. | `$help` |
-
----
-
-## ❓ Problembehandlung (Troubleshooting)
-
-### 1. `CAPTCHA_SOLVER_NOT_IMPLEMENTED` beim Invite-Command
-Wenn du einen Server per `$invite` beitreten möchtest, verlangt Discord oft ein CAPTCHA (besonders auf Linux-Servern).
-- **Lösung**: Da der Selfbot auf demselben Account wie dein normaler Discord-Client läuft, musst du dem Server lediglich **einmal manuell in deinem normalen Discord-Client beitreten** und das CAPTCHA dort lösen. Der Bot ist danach automatisch auf dem Server präsent.
-
-### 2. Fehlende Berechtigungen auf Linux bei `yt-dlp`
-Wenn die lokale `yt-dlp` Datei auf Linux nicht ausgeführt werden kann:
-- **Lösung**: Der Bot versucht automatisch `chmod +x` auf dem lokalen Binärpfad auszuführen. Sollte dies fehlschlagen, installiere `yt-dlp` einfach global: `sudo apt install yt-dlp`.
-
-### 3. WebRTC Warnung im Log
+### 3. WebRTC warnings in console
 ```text
 [WebRTC] Ignoriere bekannten Library-Bug: destroyed peer connection
 ```
-Dies ist ein bekannter, harmloser Bug in der Sprachverbindungsbibliothek von Discord, wenn ein Stream beendet oder neu gestartet wird. Diese Fehlermeldungen werden vom Bot automatisch abgefangen und beeinträchtigen den Betrieb nicht.
+This is a harmless, known bug in the Voice Connection handler when a stream starts or stops. The bot catches these warnings automatically and they do not affect operation.
+
+---
+
+## 📜 Credits
+This project utilizes the [discord-video-stream](https://github.com/Discord-RE/Discord-video-stream) package for all WebRTC video and audio encoding/packetizing logic.
