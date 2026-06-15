@@ -1,0 +1,29 @@
+{
+  "name": "discord-stream-bot",
+  "version": "1.0.0",
+  "description": "Discord Video Stream Selfbot",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsc",
+    "start:built": "node dist/index.js"
+  },
+  "dependencies": {
+    "@dank074/discord-video-stream": "latest",
+    "discord.js-selfbot-v13": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "allowScripts": {
+    "@lng2004/node-datachannel@0.32.0-20260202": true,
+    "esbuild@0.28.1": true,
+    "node-av@5.2.4": true,
+    "sharp@0.34.5": true,
+    "zeromq@6.5.0": true
+  }
+}
